@@ -1,0 +1,37 @@
+name: Poll Gmail
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: poll-gmail
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync --locked --no-dev
+
+      - name: Run one poll
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          CLASSIFIER_MODEL: ${{ secrets.CLASSIFIER_MODEL }}
+          AGENT_MODEL: ${{ secrets.AGENT_MODEL }}
+          CLASSIFIER_FALLBACK_MODEL: ${{ secrets.CLASSIFIER_FALLBACK_MODEL }}
+          AGENT_FALLBACK_MODEL: ${{ secrets.AGENT_FALLBACK_MODEL }}
+          PYDANTIC_AI_NO_BANNER: ${{ secrets.PYDANTIC_AI_NO_BANNER }}
+        run: uv run --no-sync python -c "from app.poller import poll_once; print('processed', poll_once())"
